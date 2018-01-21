@@ -27,7 +27,7 @@ pipeline {
         
         stage('Deploy to PROD') {
             steps {
-                timeout(time:5, unit:'Days'){
+                timeout(time:5, unit:'DAYS'){
                     input message: 'Approve PRODUCTION Deployment'
                 }
                 
