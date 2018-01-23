@@ -1,16 +1,24 @@
 pipeline {
     agent any
-    
-    tools {
-        maven 'localMaven'
+
+    parameters {
+         string(name: 'tomcat_dev', defaultValue: '18.218.179.209', description: 'Staging Server')
+         string(name: 'tomcat_prod', defaultValue: '52.15.235.146', description: 'Production Server')
     }
-    
-    stages {
-        stage('Build') {
+
+    triggers {
+         pollSCM('* * * * *')
+     }
+     
+     tools {
+        maven: 'localMaven'
+     }
+
+stages{
+        stage('Build'){
             steps {
                 sh 'mvn clean package'
             }
-            
             post {
                 success {
                     echo 'Now Archiving...'
@@ -18,31 +26,21 @@ pipeline {
                 }
             }
         }
-        
-        stage('Deploy to Staging') {
-            steps {
-                build job: 'deploy-to-staging'
-            }
-        }
-        
-        stage('Deploy to PROD') {
-            steps {
-                timeout(time:5, unit:'DAYS'){
-                    input message: 'Approve PRODUCTION Deployment'
-                }
-                
-                build job: 'deploy-to-prod'
-            }
-            post {
-                success {
-                    echo 'Code deployed to Prod'
-                }
-                
-                failure {
-                    echo 'Deployment failed'
-                }
-            }
-        }
 
+        stage ('Deployments'){
+            parallel{
+                stage ('Deploy to Staging'){
+                    steps {
+                        sh "scp -i /Documents/Jenkins_Maven/tomcat-demo.pem **/target/*.war ec2-user@${params.tomcat_dev}:/var/lib/tomcat7/webapps"
+                    }
+                }
+
+                stage ("Deploy to Production"){
+                    steps {
+                        sh "scp -i /Documents/Jenkins_Maven//tomcat-demo.pem **/target/*.war ec2-user@${params.tomcat_prod}:/var/lib/tomcat7/webapps"
+                    }
+                }
+            }
+        }
     }
 }
