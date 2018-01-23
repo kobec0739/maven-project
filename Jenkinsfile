@@ -11,7 +11,7 @@ pipeline {
      }
      
      tools {
-        maven: 'localMaven'
+        maven 'localMaven'
      }
 
 stages{
